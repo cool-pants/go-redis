@@ -4,6 +4,7 @@ import (
     "fmt"
     "net"
     "os"
+    "strings"
 )
 
 func main() {
@@ -32,14 +33,14 @@ func main() {
         fmt.Println("Failed to read into buffer")
         os.Exit(1)
     }
+    for s := range strings.Split(string(buf), "\r\n") {
+        fmt.Printf("Result : %d\n", s) 
 
-    fmt.Printf("Result : %v\n", string(buf))
+        _, err = c.Write([]byte("+PONG\r\n"))
 
-    _, err = c.Write([]byte("+PONG\r\n"))
-
-    if err != nil {
-        fmt.Println("Failed to write into buffer")
-        os.Exit(1)
+        if err != nil {
+            fmt.Println("Failed to write into buffer")
+            os.Exit(1)
+        }
     }
-
 }

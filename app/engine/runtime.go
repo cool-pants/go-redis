@@ -18,6 +18,7 @@ type EventLoop struct {
     input chan []byte
     output chan []byte
     stop chan struct{}
+    conn *net.Conn
 }
 
 func StartEngine(conf RedisConf) {
@@ -60,6 +61,7 @@ func StartEngine(conf RedisConf) {
 
         // Write into route
         out := <-loop.output
+        fmt.Printf("Received bytes %s\n", string(out))
         _, err = c.Write(out)
         if err != nil {
             fmt.Println("Failed to write into buffer")
@@ -74,6 +76,6 @@ func connectionReader(eventBuf *EventLoop) {
     var buf = <-eventBuf.input
     for s, val := range strings.Split(string(buf), "\r\n") {
         fmt.Printf("Result : %d %s\n", s, val) 
-        eventBuf.input<-[]byte("+PONG\r\n")
+        eventBuf.output<-[]byte("+PONG\r\n")
     }
 }

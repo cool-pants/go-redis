@@ -14,6 +14,12 @@ type RedisConf struct {
     Port string
 }
 
+type EventLoop struct {
+    input chan []byte
+    output chan []byte
+    stop chan struct{}
+}
+
 func StartEngine(conf RedisConf) {
     l, err := net.Listen("tcp", fmt.Sprintf("%s:%s", conf.Host, conf.Port))
     if err != nil {
@@ -35,29 +41,39 @@ func StartEngine(conf RedisConf) {
         fmt.Printf("Shutting down redis\n")
         os.Exit(0)
     }()
+    loop := &EventLoop{
+        input: make(chan []byte, 10),
+        output: make(chan []byte, 10),
+        stop: make(chan struct{}),
+    }
+
+    go connectionReader(loop)
     for {
-        connectionReader(c)
+        var buf = make([]byte, 1024)
+        _, err := c.Read(buf)
+        if err != nil {
+            fmt.Println("Failed to read into buffer")
+            os.Exit(1)
+        }
+        loop.input<-buf
+
+
+        // Write into route
+        out := <-loop.output
+        _, err = c.Write(out)
+        if err != nil {
+            fmt.Println("Failed to write into buffer")
+            os.Exit(1)
+        }
     }
 
 }
 
 
-func connectionReader(c net.Conn) {
-    var buf = make([]byte, 1024)
-    _, err := c.Read(buf)
-    if err != nil {
-        fmt.Println("Failed to read into buffer")
-        os.Exit(1)
-    }
+func connectionReader(eventBuf *EventLoop) {
+    var buf = <-eventBuf.input
     for s, val := range strings.Split(string(buf), "\r\n") {
         fmt.Printf("Result : %d %s\n", s, val) 
-        if val == "PING" {
-            _, err = c.Write([]byte("+PONG\r\n"))
-        }
-
-        if err != nil {
-            fmt.Println("Failed to write into buffer")
-            os.Exit(1)
-        }
+        eventBuf.input<-[]byte("+PONG\r\n")
     }
 }

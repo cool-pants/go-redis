@@ -1,10 +1,10 @@
 package engine
 
 import (
-	"fmt"
-	"net"
-	"os"
-	"strings"
+    "fmt"
+    "net"
+    "os"
+    "io"
 )
 
 
@@ -27,34 +27,29 @@ func StartEngine(conf RedisConf) {
             os.Exit(1)
         }
 
-        defer c.Close()
         go connectionReader(c)
     }
 }
 
 
 func connectionReader(c net.Conn) {
+    defer c.Close()
 
+    var buf = make([]byte, 1024)
     for {
-        var buf = make([]byte, 1024)
         _, err := c.Read(buf)
+        if err == io.EOF {
+            c.Close()
+        }
         if err != nil {
             fmt.Println("Failed to read into buffer")
-            os.Exit(1)
+            return
         }
-        var res = ""
-        for s, val := range strings.Split(string(buf), "\r\n") {
-            fmt.Printf("Result : %d %s\n", s, val) 
-            if strings.Contains(val, "PING"){
-                res += "+PONG\r\n"
-            }
-        }
-        _, err = c.Write([]byte(res))
+        _, err = c.Write([]byte("+PONG\r\n"))
         if err != nil {
             fmt.Println("Failed to write into buffer")
-            os.Exit(1)
+            return
         }
-
     }
 
 }

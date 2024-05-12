@@ -50,10 +50,11 @@ func connectionReader(c net.Conn) {
         fmt.Println("Failed to read into buffer")
         os.Exit(1)
     }
-    for s := range strings.Split(string(buf), "\r\n") {
-        fmt.Printf("Result : %d\n", s) 
-
-        _, err = c.Write([]byte("+PONG\r\n"))
+    for s, val := range strings.Split(string(buf), "\r\n") {
+        fmt.Printf("Result : %d %s\n", s, val) 
+        if val == "PING" {
+            _, err = c.Write([]byte("+PONG\r\n"))
+        }
 
         if err != nil {
             fmt.Println("Failed to write into buffer")

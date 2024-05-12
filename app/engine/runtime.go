@@ -37,14 +37,13 @@ func StartEngine(conf RedisConf) {
     }()
     for {
         connectionReader(c)
-        c.Close()
     }
 
 }
 
 
 func connectionReader(c net.Conn) {
-    var buf = make([]byte, 128)
+    var buf = make([]byte, 1024)
     _, err := c.Read(buf)
     if err != nil {
         fmt.Println("Failed to read into buffer")

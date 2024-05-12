@@ -42,13 +42,17 @@ func connectionReader(c net.Conn) {
             fmt.Println("Failed to read into buffer")
             os.Exit(1)
         }
+        var res = "+"
         for s, val := range strings.Split(string(buf), "\r\n") {
             fmt.Printf("Result : %d %s\n", s, val) 
-            _, err = c.Write([]byte("+PONG\r\n"))
-            if err != nil {
-                fmt.Println("Failed to write into buffer")
-                os.Exit(1)
+            if strings.Contains(val, "PING"){
+                res += "PONG\r\n"
             }
+        }
+        _, err = c.Write([]byte(res))
+        if err != nil {
+            fmt.Println("Failed to write into buffer")
+            os.Exit(1)
         }
 
     }
